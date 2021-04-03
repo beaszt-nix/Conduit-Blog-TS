@@ -1,9 +1,15 @@
 import { Module } from '@nestjs/common';
+import { TypeOrmModule } from '@nestjs/typeorm';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { DBConnService } from './db-connection.service';
 
 @Module({
-  imports: [],
+  imports: [
+    TypeOrmModule.forRootAsync({
+      useClass: DBConnService,
+    }),
+  ],
   controllers: [AppController],
   providers: [AppService],
 })
