@@ -1,14 +1,13 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
+import { ExtractJwt, Strategy } from 'passport-jwt';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Strategy } from 'passport';
-import { ExtractJwt } from 'passport-jwt';
 import { UserEntity } from 'src/entities/user.entity';
-import { AuthPayload } from 'src/models/user.dto';
 import { Repository } from 'typeorm';
+import { AuthPayload } from 'src/models/user.dto';
 
 @Injectable()
-export class JwtStrategy extends PassportStrategy(Strategy, 'ConduitAuth') {
+export class JwtStrategy extends PassportStrategy(Strategy) {
   constructor(
     @InjectRepository(UserEntity) private userRepo: Repository<UserEntity>,
   ) {
