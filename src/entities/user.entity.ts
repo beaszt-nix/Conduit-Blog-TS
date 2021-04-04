@@ -5,11 +5,13 @@ import {
   Entity,
   BeforeInsert,
   ManyToMany,
-  JoinTable,
   OneToMany,
+  JoinTable,
+  JoinColumn,
 } from 'typeorm';
-import { CommonEntity } from './common-entity';
+import { CommonEntity } from 'src/entities/common-entity';
 import * as bcrypt from 'bcryptjs';
+import { ArticleEntity } from 'src/entities/article.entity';
 
 @Entity('users')
 export class UserEntity extends CommonEntity {
@@ -35,7 +37,16 @@ export class UserEntity extends CommonEntity {
   followers: UserEntity[];
 
   @ManyToMany((type) => UserEntity, (user) => user.followers)
+  @JoinTable()
   followee: UserEntity[];
+
+  @ManyToMany((type) => ArticleEntity, (article) => article.favoritedBy)
+  @JoinTable()
+  favorites: ArticleEntity[];
+
+  @OneToMany((type) => ArticleEntity, (article) => article.author)
+  @JoinColumn()
+  articles: ArticleEntity[];
 
   @BeforeInsert()
   async hashPassword() {
@@ -46,8 +57,11 @@ export class UserEntity extends CommonEntity {
     return await bcrypt.compare(attempt, this.password);
   }
 
-  toProfile(user: UserEntity) {
-    const following = this.followers.includes(user);
+  toProfile(user?: UserEntity) {
+    let following = null;
+    if (user !== undefined) {
+      following = this.followers.includes(user);
+    }
     const profile: any = { ...this.toJSON(), following };
     delete profile.followers;
     return { profile };
