@@ -13,7 +13,7 @@ export class DBConnService implements TypeOrmOptionsFactory {
       password: process.env.DB_PASS,
       database: process.env.DB_DB,
       synchronize: true,
-      dropSchema: false,
+      dropSchema: true,
       logging: true,
       entities: ['dist/**/*.entity.js'],
     };
