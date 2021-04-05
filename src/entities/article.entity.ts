@@ -7,6 +7,7 @@ import {
   ManyToMany,
   ManyToOne,
   RelationCount,
+  OneToMany,
 } from 'typeorm';
 import { CommonEntity } from 'src/entities/common-entity';
 import { UserEntity } from 'src/entities/user.entity';
@@ -14,6 +15,7 @@ import { TagEntity } from 'src/entities/tags.entity';
 import * as slug from 'slug';
 import { uuid } from 'uuidv4';
 import { classToPlain } from 'class-transformer';
+import { CommentEntity } from './comment.entity';
 
 @Entity('articles')
 export class ArticleEntity extends CommonEntity {
@@ -43,6 +45,9 @@ export class ArticleEntity extends CommonEntity {
   @ManyToMany((type) => TagEntity, (tag) => tag.articles)
   @JoinTable()
   tagList: TagEntity[];
+
+  @OneToMany((type) => CommentEntity, (comment) => comment.article)
+  comments: CommentEntity[];
 
   @BeforeInsert()
   generateSlug() {

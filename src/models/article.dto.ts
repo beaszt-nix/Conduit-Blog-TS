@@ -1,4 +1,4 @@
-import { IsOptional, IsString } from 'class-validator';
+import { IsOptional, IsString, MaxLength } from 'class-validator';
 
 export class ArticleDTO {
   @IsString()
@@ -30,6 +30,12 @@ export class ArticleUpdateDTO {
   @IsString({ each: true })
   @IsOptional()
   tagList: string[];
+}
+
+export class CommentDTO {
+  @IsString()
+  @MaxLength(400)
+  body: string;
 }
 
 export interface ArticleQuery {

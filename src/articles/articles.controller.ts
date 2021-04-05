@@ -19,12 +19,17 @@ import {
   ArticleDTO,
   ArticleQuery,
   ArticleUpdateDTO,
+  CommentDTO,
 } from 'src/models/article.dto';
 import { ArticlesService } from './articles.service';
+import { CommentsService } from './comments.service';
 
 @Controller('articles')
 export class ArticlesController {
-  constructor(private articleService: ArticlesService) {}
+  constructor(
+    private articleService: ArticlesService,
+    private commentService: CommentsService,
+  ) {}
 
   @Post()
   @UseGuards(AuthGuard())
@@ -68,17 +73,55 @@ export class ArticlesController {
     return await this.articleService.unfavoriteArticle(user, slug);
   }
 
+  @Get('feed')
+  @UseGuards(AuthGuard())
+  async feedArticles(
+    @User() user: UserEntity,
+    @Query() { limit, offset }: { limit?: number; offset?: number },
+  ) {
+    return await this.articleService.feedArticle(
+      user,
+      limit ? limit : 20,
+      offset ? offset : 0,
+    );
+  }
+
   @Get('/:slug')
   @UseGuards(AuthGuard())
   async getArticle(@User() user: UserEntity, @Param('slug') slug: string) {
     return this.articleService.findBySlug(slug, user);
   }
 
-  @Get()
+  @Get('')
   @UseGuards(new OptionalAuthGuard())
   async listArticles(@User() user: UserEntity, @Query() query: ArticleQuery) {
     if (!query.offset) query.offset = 0;
     if (!query.limit) query.limit = 20;
     return await this.articleService.queryArticles(query, user);
+  }
+
+  @Get('/:slug/comments')
+  async getComments(@Param('slug') slug: string) {
+    return await this.commentService.getAllComments(slug);
+  }
+
+  @Delete(':slug/comments/:id')
+  @UseGuards(AuthGuard())
+  async deleteComment(
+    @Param('slug') slug: string,
+    @Param('id') commentId: number,
+    @User() { username }: UserEntity,
+  ) {
+    this.commentService.deleteComment(commentId, username, slug);
+  }
+
+  @Post(':slug/comments')
+  @UseGuards(AuthGuard())
+  async createComment(
+    @User() user: UserEntity,
+    @Body('comment', ValidationPipe) body: CommentDTO,
+    @Param('slug') slug: string,
+  ) {
+    return await this.commentService.createComment(body, user, slug);
   }
 }

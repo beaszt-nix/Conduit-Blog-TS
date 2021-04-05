@@ -12,6 +12,8 @@ import {
 import { CommonEntity } from 'src/entities/common-entity';
 import * as bcrypt from 'bcryptjs';
 import { ArticleEntity } from 'src/entities/article.entity';
+import { CommentEntity } from './comment.entity';
+import { User } from 'src/auth/user.decorator';
 
 @Entity('users')
 export class UserEntity extends CommonEntity {
@@ -47,6 +49,9 @@ export class UserEntity extends CommonEntity {
   @OneToMany((type) => ArticleEntity, (article) => article.author)
   @JoinColumn()
   articles: ArticleEntity[];
+
+  @OneToMany((type) => CommentEntity, (comment) => comment.author)
+  comments: CommentEntity[];
 
   @BeforeInsert()
   async hashPassword() {

@@ -4,6 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { stringify } from 'node:querystring';
 import { ArticleEntity } from 'src/entities/article.entity';
 import { TagEntity } from 'src/entities/tags.entity';
 import { UserEntity } from 'src/entities/user.entity';
@@ -21,6 +22,8 @@ export class ArticlesService {
     private articleRepo: Repository<ArticleEntity>,
     @InjectRepository(TagEntity)
     private tagRepo: Repository<TagEntity>,
+    @InjectRepository(UserEntity)
+    private userRepo: Repository<UserEntity>,
   ) {}
 
   async findBySlug(slug: string, user?: UserEntity) {
@@ -138,7 +141,27 @@ export class ArticlesService {
     return await this.findBySlug(slug, user);
   }
 
-  //feedArticle(user: UserEntity, query: ArticleQuery) {}
+  async feedArticle({ username }: UserEntity, limit: number, offset: number) {
+    const user = await this.userRepo.findOne({
+      where: { username },
+      relations: ['followee'],
+    });
+    const queryString: string = user.followee
+      .map((x) => `author.username = '${x.username}'`)
+      .join(' OR ');
+    const [articles, articlesCount] = await this.articleRepo
+      .createQueryBuilder('article')
+      .leftJoinAndSelect('article.tagList', 'tagList')
+      .innerJoinAndSelect('article.author', 'author', queryString)
+      .offset(offset)
+      .limit(limit)
+      .orderBy('article.createdAt', 'ASC')
+      .getManyAndCount();
+    return {
+      articles: articles.map((x) => x.toArticle(user).article),
+      articlesCount,
+    };
+  }
 
   async queryArticles(parameters: ArticleQuery, user?: UserEntity) {
     let query = this.articleRepo.createQueryBuilder('article');
