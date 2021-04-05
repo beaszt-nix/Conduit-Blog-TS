@@ -17,6 +17,6 @@ The defaults in make will start server at http://localhost:4000/api/
 
 # Test
 
-This project uses newman to implement testing
+This project uses newman to implement end to end testing, this is also provided from the RealWorld API Spec
 
 `./run-api-tests.sh`
