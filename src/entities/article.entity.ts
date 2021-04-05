@@ -52,7 +52,9 @@ export class ArticleEntity extends CommonEntity {
   toArticle(user?: UserEntity) {
     let favorited = null;
     if (user && this.favoritedBy) {
-      favorited = this.favoritedBy.includes(user);
+      favorited = this.favoritedBy
+        .map(({ username }) => username)
+        .includes(user.username);
     }
     const article: any = { ...this.toJSON(), favorited };
     if (article.tagList)

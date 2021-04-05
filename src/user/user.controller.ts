@@ -11,15 +11,20 @@ import { User } from '../auth/user.decorator';
 import { AuthGuard } from '@nestjs/passport';
 import { UserEntity } from 'src/entities/user.entity';
 import { UserUpdateDTO } from 'src/models/user.dto';
+import { AuthService } from 'src/auth/auth.service';
 
 @Controller('user')
 export class UserController {
-  constructor(private userService: UserService) {}
+  constructor(
+    private userService: UserService,
+    private authService: AuthService,
+  ) {}
 
   @Get()
   @UseGuards(AuthGuard())
-  findCurrentUser(@User() user: UserEntity) {
-    return user;
+  async findCurrentUser(@User() { username }: UserEntity) {
+    const user = await this.authService.findCurrentUser(username);
+    return { user };
   }
 
   @Put()
@@ -29,6 +34,6 @@ export class UserController {
     @Body('user', new ValidationPipe({ transform: true, whitelist: true }))
     body: UserUpdateDTO,
   ) {
-    return await this.userService.updateUser(username, body);
+    return await this.authService.updateUser(username, body);
   }
 }

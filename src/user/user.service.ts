@@ -1,7 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { UserEntity } from 'src/entities/user.entity';
-import { UserUpdateDTO } from 'src/models/user.dto';
 import { Repository } from 'typeorm';
 
 @Injectable()
@@ -11,13 +10,12 @@ export class UserService {
   ) {}
   async findByUserName(username: string, currentUser?: UserEntity) {
     console.log(currentUser);
-    const user = (
-      await this.userRepo.findOne({
-        where: { username },
-        relations: ['followers'],
-      })
-    ).toProfile(currentUser);
-    return user;
+    const user = await this.userRepo.findOne({
+      where: { username },
+      relations: ['followers'],
+    });
+    if (!user) throw new NotFoundException("Could't Find User");
+    return user.toProfile(currentUser);
   }
 
   async followUser(currentUser: UserEntity, username: string) {
@@ -25,9 +23,13 @@ export class UserService {
       where: { username },
       relations: ['followers'],
     });
-    target_user.followers.push(currentUser);
-    await target_user.save();
-    return target_user.toProfile(currentUser);
+    if (!target_user) throw new NotFoundException('User Not Found!');
+    if (!target_user.followers) target_user.followers = [];
+    if (!target_user.followers.includes(currentUser)) {
+      target_user.followers.push(currentUser);
+      await target_user.save();
+    }
+    return await this.findByUserName(target_user.username, currentUser);
   }
 
   async unfollow(author: string, user: UserEntity) {
@@ -36,13 +38,12 @@ export class UserService {
       relations: ['followers'],
     });
     if (!targetUser) throw new NotFoundException('Invalid Username Param');
-    targetUser.followers.filter((follower) => follower !== user);
-    await targetUser.save();
-    return targetUser.toProfile(user);
-  }
-
-  async updateUser(username: string, data: UserUpdateDTO) {
-    await this.userRepo.update({ username }, data);
-    return this.findByUserName(username);
+    if (targetUser.followers) {
+      targetUser.followers = targetUser.followers.filter(
+        (follower) => follower.username !== user.username,
+      );
+      await targetUser.save();
+    }
+    return await this.findByUserName(targetUser.username, user);
   }
 }

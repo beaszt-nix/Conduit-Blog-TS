@@ -6,6 +6,7 @@ import {
   UseGuards,
   Delete,
   NotFoundException,
+  HttpCode,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { User } from 'src/auth/user.decorator';
@@ -29,6 +30,7 @@ export class ProfileController {
   }
 
   @Post('/:username/follow')
+  @HttpCode(200)
   @UseGuards(AuthGuard())
   async followUser(
     @User() user: UserEntity,
@@ -37,7 +39,7 @@ export class ProfileController {
     return await this.userService.followUser(user, author);
   }
 
-  @Delete('/:username/unfollow')
+  @Delete('/:username/follow')
   @UseGuards(AuthGuard())
   async unfollowUser(
     @User() user: UserEntity,

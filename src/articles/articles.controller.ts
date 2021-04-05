@@ -7,13 +7,19 @@ import {
   Param,
   Post,
   Put,
+  Query,
   UseGuards,
   ValidationPipe,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
+import { OptionalAuthGuard } from 'src/auth/optional.auth';
 import { User } from 'src/auth/user.decorator';
 import { UserEntity } from 'src/entities/user.entity';
-import { ArticleDTO, ArticleUpdateDTO } from 'src/models/article.dto';
+import {
+  ArticleDTO,
+  ArticleQuery,
+  ArticleUpdateDTO,
+} from 'src/models/article.dto';
 import { ArticlesService } from './articles.service';
 
 @Controller('articles')
@@ -56,7 +62,7 @@ export class ArticlesController {
     }
   }
 
-  @Post('/:slug/favorite')
+  @Delete('/:slug/favorite')
   @UseGuards(AuthGuard())
   async unfavorite(@User() user: UserEntity, @Param('slug') slug: string) {
     return await this.articleService.unfavoriteArticle(user, slug);
@@ -66,5 +72,13 @@ export class ArticlesController {
   @UseGuards(AuthGuard())
   async getArticle(@User() user: UserEntity, @Param('slug') slug: string) {
     return this.articleService.findBySlug(slug, user);
+  }
+
+  @Get()
+  @UseGuards(new OptionalAuthGuard())
+  async listArticles(@User() user: UserEntity, @Query() query: ArticleQuery) {
+    if (!query.offset) query.offset = 0;
+    if (!query.limit) query.limit = 20;
+    return await this.articleService.queryArticles(query, user);
   }
 }

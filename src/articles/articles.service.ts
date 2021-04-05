@@ -1,5 +1,4 @@
 import {
-  ConflictException,
   ForbiddenException,
   Injectable,
   NotFoundException,
@@ -8,7 +7,11 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { ArticleEntity } from 'src/entities/article.entity';
 import { TagEntity } from 'src/entities/tags.entity';
 import { UserEntity } from 'src/entities/user.entity';
-import { ArticleDTO, ArticleUpdateDTO } from 'src/models/article.dto';
+import {
+  ArticleQuery,
+  ArticleDTO,
+  ArticleUpdateDTO,
+} from 'src/models/article.dto';
 import { Repository } from 'typeorm';
 
 @Injectable()
@@ -114,14 +117,13 @@ export class ArticlesService {
       where: { slug },
       relations: ['favoritedBy'],
     });
-    try {
-      if (!article.favoritedBy.includes(user)) article.favoritedBy.push(user);
+    if (!article) throw new NotFoundException('Article Not Found');
+    if (!article.favoritedBy) article.favoritedBy = [];
+    if (!article.favoritedBy.includes(user)) {
+      article.favoritedBy = [...article.favoritedBy, user];
       await article.save();
-    } catch (err) {
-      if (err.code === '23503')
-        throw new ConflictException('Already Favorited');
     }
-    return this.findBySlug(slug, user);
+    return await this.findBySlug(slug, user);
   }
 
   async unfavoriteArticle(user: UserEntity, slug: string) {
@@ -129,12 +131,47 @@ export class ArticlesService {
       where: { slug },
       relations: ['favoritedBy'],
     });
-    article.favoritedBy = article.favoritedBy.filter((x) => x !== user);
+    article.favoritedBy = article.favoritedBy.filter(
+      (x) => x.username !== user.username,
+    );
     await article.save();
-    return this.findBySlug(slug, user);
+    return await this.findBySlug(slug, user);
   }
 
   //feedArticle(user: UserEntity, query: ArticleQuery) {}
 
-  //queryArticles(query: ArticleQuery) {}
+  async queryArticles(parameters: ArticleQuery, user?: UserEntity) {
+    let query = this.articleRepo.createQueryBuilder('article');
+    query = !parameters.author
+      ? query.innerJoinAndSelect('article.author', 'author')
+      : query.innerJoinAndSelect(
+          'article.author',
+          'author',
+          `author.username = '${parameters.author}'`,
+        );
+    query = !parameters.favorited
+      ? query.leftJoinAndSelect('article.favoritedBy', 'favoritee')
+      : query.leftJoinAndSelect(
+          'article.favoritedBy',
+          'favoritee',
+          `favoritee.username = '${parameters.favorited}'`,
+        );
+    query = !parameters.tag
+      ? query.leftJoinAndSelect('article.tagList', 'tag')
+      : query.leftJoinAndSelect(
+          'article.tagList',
+          'tag',
+          `tag.name = '${parameters.tag}'`,
+        );
+    query = query
+      .offset(parameters.offset)
+      .limit(parameters.limit)
+      .orderBy('article.createdAt', 'ASC');
+    const [articles, articlesCount] = await query.getManyAndCount();
+    console.log(articles);
+    return {
+      articles: articles.map((x) => x.toArticle(user).article),
+      articlesCount,
+    };
+  }
 }

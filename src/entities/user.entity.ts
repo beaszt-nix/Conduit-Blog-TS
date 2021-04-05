@@ -60,7 +60,7 @@ export class UserEntity extends CommonEntity {
   toProfile(user?: UserEntity) {
     let following = null;
     if (user !== undefined) {
-      following = this.followers.includes(user);
+      following = this.followers.map((x) => x.username).includes(user.username);
     }
     const profile: any = { ...this.toJSON(), following };
     delete profile.followers;

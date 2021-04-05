@@ -8,7 +8,8 @@ import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { UserEntity } from '../entities/user.entity';
-import { LoginDTO, RegisterDTO } from '../models/user.dto';
+import { LoginDTO, RegisterDTO, UserUpdateDTO } from '../models/user.dto';
+import { User } from './user.decorator';
 
 @Injectable()
 export class AuthService {
@@ -46,5 +47,17 @@ export class AuthService {
       if (err.code === '23505') throw new ConflictException();
       throw new UnauthorizedException('Invalid Credentials');
     }
+  }
+  async findCurrentUser(@User() username: string) {
+    const user = await this.userRepo.findOne({ where: { username } });
+    const payload = { username };
+    const token = this.jwtService.sign(payload);
+    return { ...user, token };
+  }
+
+  async updateUser(username: string, data: UserUpdateDTO) {
+    await this.userRepo.update({ username }, data);
+    const user = await this.findCurrentUser(username);
+    return { user };
   }
 }
